@@ -1,0 +1,7 @@
+{
+  "name": "VarejoElite - Programa de Excelência para Supermercados",
+  "description": "Uma plataforma robusta para gestão de metas, níveis de excelência e premiações para redes de supermercados, com análise inteligente via Gemini.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
