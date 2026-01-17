@@ -1,7 +1,11 @@
-import { GoogleGenAI } from "@google/genai";
-import { Store, KPI } from "./types";
+import { generateText } from "ai";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
+import { Store } from "./types";
 
-const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_API_KEY || '' });
+// Configuração do provedor Google com a chave do Vite
+const google = createGoogleGenerativeAI({
+  apiKey: import.meta.env.VITE_API_KEY || '',
+});
 
 export const getStoreInsights = async (store: Store) => {
   const kpiDetails = store.kpis.map(k =>
@@ -25,13 +29,13 @@ export const getStoreInsights = async (store: Store) => {
   `;
 
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-1.5-flash',
-      contents: prompt,
+    const { text } = await generateText({
+      model: google('gemini-1.5-flash'),
+      prompt: prompt,
     });
-    return response.text;
+    return text;
   } catch (error) {
-    console.error("Erro ao obter insights do Gemini:", error);
-    return "Não foi possível gerar insights automáticos no momento. Verifique sua conexão ou tente novamente mais tarde.";
+    console.error("Erro ao obter insights do Gemini (Vercel SDK):", error);
+    return "Não foi possível gerar insights automáticos no momento. Verifique sua conexão e chave de API.";
   }
 };
