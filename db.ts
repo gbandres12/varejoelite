@@ -1,4 +1,3 @@
-```typescript
 import { Store } from './types';
 import { INITIAL_STORES } from './constants';
 import { dbFirestore, isFirebaseConfigured } from './firebaseClient';
@@ -24,7 +23,7 @@ export const db = {
             // Firestore retorna os dados como JSON, compatível com nosso tipo Store
             stores.push(doc.data() as Store);
           });
-          
+
           // Atualiza cache local
           localStorage.setItem(DB_KEY, JSON.stringify(stores));
           return stores;
@@ -45,11 +44,11 @@ export const db = {
     // 2. Se conectado, salva na nuvem
     if (isFirebaseConfigured() && dbFirestore) {
       try {
-         const promises = stores.map(store => 
-            setDoc(doc(dbFirestore, "stores", store.id), store)
-         );
-         await Promise.all(promises);
-         console.log("Firebase: Dados sincronizados.");
+        const promises = stores.map(store =>
+          setDoc(doc(dbFirestore, "stores", store.id), store)
+        );
+        await Promise.all(promises);
+        console.log("Firebase: Dados sincronizados.");
       } catch (e) {
         console.error("Erro ao salvar no Firebase:", e);
       }
@@ -63,7 +62,7 @@ export const db = {
     const link = document.createElement('a');
     const timestamp = new Date().toISOString().split('T')[0];
     link.href = url;
-    link.download = `varejo - elite - db - backup - ${ timestamp }.json`;
+    link.download = `varejo-elite-db-backup-${timestamp}.json`;
     link.click();
     URL.revokeObjectURL(url);
   },
@@ -91,9 +90,7 @@ export const db = {
 
   clearDB: async () => {
     localStorage.removeItem(DB_KEY);
-    if (isSupabaseConfigured()) {
-      // Opcional: limpar banco
-    }
+    // Se quiser limpar o firebase, implementaria aqui
     window.location.reload();
   }
 };
