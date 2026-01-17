@@ -8,17 +8,21 @@ import { UserRole, Store } from './types';
 import { db } from './db';
 
 const SESSION_KEY = 'varejo_elite_session';
-const ADMIN_PASSWORD = '1234'; 
+const ADMIN_PASSWORD = '1234';
 
 const App: React.FC = () => {
-  const [stores, setStores] = useState<Store[]>([]);
+  const [stores, setStores] = useState<Store[]>(db.getStoresLocal());
   const [activeStoreIndex, setActiveStoreIndex] = useState<number | null>(null);
   const [role, setRole] = useState<UserRole | null>(null);
   const [loginError, setLoginError] = useState<string | undefined>();
 
   // Carrega os dados na inicialização
   useEffect(() => {
-    setStores(db.getStores());
+    const initData = async () => {
+      const data = await db.fetchStores();
+      setStores(data);
+    };
+    initData();
 
     const session = localStorage.getItem(SESSION_KEY);
     if (session) {
@@ -90,17 +94,17 @@ const App: React.FC = () => {
   const activeStore = stores[activeStoreIndex];
 
   return (
-    <Layout 
-      role={role} 
+    <Layout
+      role={role}
       activeStore={role === 'ADMIN' ? 'GESTÃO GLOBAL' : activeStore.fantasia}
       onLogout={handleLogout}
     >
       {role === 'CLIENT' ? (
         <ClientDashboard store={activeStore} />
       ) : (
-        <AdminPanel 
-          stores={stores} 
-          updateStore={updateStore} 
+        <AdminPanel
+          stores={stores}
+          updateStore={updateStore}
           addStore={addStore}
           onSelectStore={(idx: number) => setActiveStoreIndex(idx)}
           activeIdx={activeStoreIndex}
