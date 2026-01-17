@@ -1,6 +1,8 @@
+```typescript
 import { Store } from './types';
 import { INITIAL_STORES } from './constants';
-import { supabase, isSupabaseConfigured } from './supabaseClient';
+import { dbFirestore, isFirebaseConfigured } from './firebaseClient';
+import { collection, getDocs, doc, setDoc } from 'firebase/firestore';
 
 const DB_KEY = 'varejo_elite_v1_database';
 
@@ -11,33 +13,24 @@ export const db = {
     return data ? JSON.parse(data) : INITIAL_STORES;
   },
 
-  // Busca assíncrona (Supabase -> LocalStorage)
+  // Busca assíncrona (Firebase -> LocalStorage)
   fetchStores: async (): Promise<Store[]> => {
-    if (isSupabaseConfigured()) {
+    if (isFirebaseConfigured() && dbFirestore) {
       try {
-        const { data, error } = await supabase.from('stores').select('*');
-        if (error) throw error;
-
-        if (data && data.length > 0) {
-          // Mapeia do formato do banco para o App se necessário
-          const formatted: Store[] = data.map((row: any) => ({
-            id: row.id,
-            code: row.code,
-            razaoSocial: row.razao_social,
-            fantasia: row.fantasia,
-            manager: row.manager,
-            lastUpdate: row.last_update,
-            kpis: row.kpis || [],
-            customRewards: row.custom_rewards || {},
-            tierColors: row.tier_colors || {}
-          }));
-
+        const querySnapshot = await getDocs(collection(dbFirestore, "stores"));
+        if (!querySnapshot.empty) {
+          const stores: Store[] = [];
+          querySnapshot.forEach((doc) => {
+            // Firestore retorna os dados como JSON, compatível com nosso tipo Store
+            stores.push(doc.data() as Store);
+          });
+          
           // Atualiza cache local
-          localStorage.setItem(DB_KEY, JSON.stringify(formatted));
-          return formatted;
+          localStorage.setItem(DB_KEY, JSON.stringify(stores));
+          return stores;
         }
       } catch (e) {
-        console.error("Erro ao buscar do Supabase:", e);
+        console.error("Erro ao buscar do Firebase:", e);
       }
     }
     // Fallback
@@ -49,25 +42,16 @@ export const db = {
     // 1. Salva localmente sempre (rapidez)
     localStorage.setItem(DB_KEY, JSON.stringify(stores));
 
-    // 2. Se conectado, salva na nuvem (Debounce idealmente, mas direto por enquanto)
-    if (isSupabaseConfigured()) {
+    // 2. Se conectado, salva na nuvem
+    if (isFirebaseConfigured() && dbFirestore) {
       try {
-        const rows = stores.map(s => ({
-          id: s.id,
-          code: s.code,
-          razao_social: s.razaoSocial,
-          fantasia: s.fantasia,
-          manager: s.manager,
-          last_update: s.lastUpdate,
-          kpis: s.kpis,
-          custom_rewards: s.customRewards,
-          tier_colors: s.tierColors
-        }));
-
-        const { error } = await supabase.from('stores').upsert(rows);
-        if (error) throw error;
+         const promises = stores.map(store => 
+            setDoc(doc(dbFirestore, "stores", store.id), store)
+         );
+         await Promise.all(promises);
+         console.log("Firebase: Dados sincronizados.");
       } catch (e) {
-        console.error("Erro ao salvar no Supabase:", e);
+        console.error("Erro ao salvar no Firebase:", e);
       }
     }
   },
@@ -79,7 +63,7 @@ export const db = {
     const link = document.createElement('a');
     const timestamp = new Date().toISOString().split('T')[0];
     link.href = url;
-    link.download = `varejo-elite-db-backup-${timestamp}.json`;
+    link.download = `varejo - elite - db - backup - ${ timestamp }.json`;
     link.click();
     URL.revokeObjectURL(url);
   },
