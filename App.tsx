@@ -6,6 +6,7 @@ import AdminPanel from './components/AdminPanel';
 import AccessScreen from './components/AccessScreen';
 import { UserRole, Store } from './types';
 import { db } from './db';
+import { client } from './lib/appwrite';
 
 const SESSION_KEY = 'varejo_elite_session';
 const ADMIN_PASSWORD = '1234';
@@ -19,6 +20,11 @@ const App: React.FC = () => {
   // Carrega os dados na inicialização
   useEffect(() => {
     const initData = async () => {
+      // Verifica conexão com Appwrite
+      if ((client as any).ping) {
+        await (client as any).ping();
+      }
+
       const data = await db.fetchStores();
       setStores(data);
     };
